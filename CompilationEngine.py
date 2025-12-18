@@ -26,8 +26,6 @@ class CompilationEngine:
         """
         # Note that you can write to output_stream like so:
         # output_stream.write("Hello world! \n")
-
-
         self.tokenizer = input_stream
         self.output_file = output_stream
 
@@ -57,7 +55,7 @@ class CompilationEngine:
         while (self.tokenizer.token_type == "KEYWORD") and (self.tokenizer.current_token in subroutineDec):
             self.compile_subroutine()
 
-        # the end of the class
+        # the end of the class 
         self.output_file.write("<symbol> } </symbol>\n")
         self.tokenizer.advance()
         self.output_file.write("</class>\n")  # TODO: check if advance is not empty
@@ -215,14 +213,39 @@ class CompilationEngine:
 
     def compile_do(self) -> None:
         """Compiles a do statement."""
-        #     - doStatement: 'do' subroutineCall ';'
-        # Your code goes here!
-        pass
+        # - doStatement: 'do' subroutineCall ';'
+        self.output_file.wrtie("<doStatement>\n")
+        self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n") # do 
+        self.tokenizer.advance()
+
+        self.compile_subroutine() # subroutineCall
+
+        self.output_file.write(f"<symbol> ; </symbol>\n")   # ;
+        self.tokenizer.advance()
+        
+        self.output_file.write("</doStatement>\n")
 
     def compile_let(self) -> None:
         """Compiles a let statement."""
-        # Your code goes here!
-        pass
+        self.output_file.wrtie("<letStatement>\n")
+        self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n") # let
+        self.tokenizer.advance()
+
+        self.output_file.write(f"<identifier> {self.tokenizer.identifier()} </identifier>\n") # varName
+        self.tokenizer.advance()
+
+        # TODO :  add list op
+
+        self.output_file.write("<symbol> = </symbol>\n") # = 
+        self.tokenizer.advance()
+
+        self.compile_expression(); # expresion
+
+        self.output_file.write(f"<symbol> ; </symbol>\n")   # ;
+        self.tokenizer.advance()
+        
+        self.output_file.write("</letStatement>\n")
+        
 
     def compile_while(self) -> None:
         """Compiles a while statement."""
@@ -250,7 +273,7 @@ class CompilationEngine:
         self.output_file.write("<returnStatement>\n")
         self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")  # return
         self.tokenizer.advance()
-
+        
         while self.tokenizer.current_token != ";":
             self.compile_expression()
 
@@ -299,6 +322,7 @@ class CompilationEngine:
         """Compiles an expression."""
         # Your code goes here!
         pass
+        # TODO
 
     def compile_term(self) -> None:
         """Compiles a term. 
@@ -310,10 +334,11 @@ class CompilationEngine:
         to distinguish between the three possibilities. Any other token is not
         part of this term and should not be advanced over.
         """
-        # Your code goes here!
         pass
+        # TODO
 
     def compile_expression_list(self) -> None:
         """Compiles a (possibly empty) comma-separated list of expressions."""
         # Your code goes here!
         pass
+        # TODO
