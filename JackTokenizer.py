@@ -93,8 +93,6 @@ class JackTokenizer:
     Note that ^, # correspond to shiftleft and shiftright, respectively.
     """
 
-
-
     def __init__(self, input_stream: typing.TextIO) -> None:
         """Opens the input stream and gets ready to tokenize it.
 
@@ -106,14 +104,13 @@ class JackTokenizer:
             r'|[(){}\[\].,;+\-*/&|<>=~^#]'                # 2. Symbol: Matches any of the required symbols
             r'|\w+'               # 3. Identifiers, Keywords, Integer Constants (letters, digits, underscore)
         )
-        # TODO:comment_starters = ["//", "/*", "/**"]
+        # TODO: comment_starters = ["//", "/*", "/**"]
         input_lines = input_stream.read().splitlines()
         self.current_token_index = 0
         self.current_token = None
         self.tokens = []
         # temp list of the tokens
         all_tokens = []
-
 
         for line in input_lines:
             comment_index = line.find("//")
@@ -127,8 +124,6 @@ class JackTokenizer:
                 tokens_on_line = TOKEN_PATTERN.findall(line)
                 all_tokens.extend(tokens_on_line)
         self.tokens = all_tokens
-
-
 
     def has_more_tokens(self) -> bool:
         """Do we have more tokens in the input?
@@ -173,7 +168,6 @@ class JackTokenizer:
             return 'STRING_CONST'
         return 'IDENTIFIER'
 
-
     def keyword(self) -> str:
         """
         Returns:
@@ -188,8 +182,6 @@ class JackTokenizer:
         else:
             raise ValueError(f"Keyword method called on non-KEYWORD token: {self.current_token}")
 
-
-
     def symbol(self) -> str:
         """
         Returns:
@@ -203,7 +195,6 @@ class JackTokenizer:
             return self.current_token
         else:
             raise ValueError(f"Symbol method called on non-Symbol token: {self.current_token}")
-
 
     def identifier(self) -> str:
         """
