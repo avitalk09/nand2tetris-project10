@@ -25,6 +25,7 @@ def analyze_file(
     tokenizer = JackTokenizer(input_file)
     engine = CompilationEngine(tokenizer, output_file)
 
+    tokenizer.advance()
     while tokenizer.current_token == 'class': #TODO: move the while loop to the function CompilationEngine.compileClass
 
         engine.compile_class()
