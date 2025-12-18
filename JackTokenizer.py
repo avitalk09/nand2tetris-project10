@@ -104,8 +104,13 @@ class JackTokenizer:
             r'|[(){}\[\].,;+\-*/&|<>=~^#]'                # 2. Symbol: Matches any of the required symbols
             r'|\w+'               # 3. Identifiers, Keywords, Integer Constants (letters, digits, underscore)
         )
-        # TODO: comment_starters = ["//", "/*", "/**"]
-        input_lines = input_stream.read().splitlines()
+         # remove comment_starters = ["//", "/*", "/**"]
+        input_text = input_stream.read()
+        input_text = re.sub(r"/\*\*?.*?\*/", "", input_text, flags=re.DOTALL)
+        input_text = re.sub(r"//.*", "", input_text)
+        
+        # spilt to lines
+        input_lines = input_text.splitlines()
         self.current_token_index = 0
         self.current_token = None
         self.tokens = []
