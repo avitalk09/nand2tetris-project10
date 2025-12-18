@@ -10,7 +10,7 @@ import typing
 from JackTokenizer import JackTokenizer
 
 OPERATIONS = {'+', '-', '/', '&', '|', '<', '>', '='}
-UNARY_OPERATIONS = {'-', '~'}
+UNARY_OPERATIONS = {'-', '~', '#', '^'}
 KEYWORD_CONSTANTS = {'true', 'false', 'null', 'this'}
 
 
