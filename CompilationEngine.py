@@ -34,7 +34,7 @@ class CompilationEngine:
     def compile_class(self) -> None:
         """Compiles a complete class."""
 
-        subroutineDec = {"function", "method", "constructor"}
+        subroutine_dec = {"function", "method", "constructor"}
 
         # Write class and { and then advance to the class content
         self.output_file.write("<class>\n")
@@ -50,7 +50,7 @@ class CompilationEngine:
             self.compile_class_var_dec()
 
         # all func and method in  the class
-        while (self.tokenizer.token_type == "KEYWORD") and (self.tokenizer.current_token in subroutineDec):
+        while (self.tokenizer.token_type == "KEYWORD") and (self.tokenizer.current_token in subroutine_dec):
             self.compile_subroutine()
 
         # the end of the class
