@@ -9,7 +9,7 @@ import typing
 
 from JackTokenizer import JackTokenizer
 
-OPERATIONS = {'+', '-', '/', '&', '|', '<', '>', '='}
+OPERATIONS = {'+', '-', '/', '&', '|', '<', '>', '=', '*'}
 UNARY_OPERATIONS = {'-', '~', '#', '^'}
 KEYWORD_CONSTANTS = {'true', 'false', 'null', 'this'}
 
@@ -33,30 +33,32 @@ class CompilationEngine:
 
     def compile_class(self) -> None:
         """Compiles a complete class."""
+        self.output_file.write("<tokens>\n")  # beginning of file
 
         subroutine_dec = {"function", "method", "constructor"}
 
         # Write class and { and then advance to the class content
-        self.output_file.write("<class>\n")
+        self.output_file.write("<keyword> class </keyword>\n")
         self.tokenizer.advance()
         self.output_file.write(f"<identifier> {self.tokenizer.identifier()} </identifier>\n")
+        self.tokenizer.advance()
         self.output_file.write("<symbol> { </symbol>\n")
         self.tokenizer.advance()
 
         # Class variants
         while ((self.tokenizer.token_type() == "KEYWORD") and
                (self.tokenizer.current_token == "static" or (self.tokenizer.current_token == "field"))):
-
             self.compile_class_var_dec()
 
         # all func and method in  the class
-        while (self.tokenizer.token_type == "KEYWORD") and (self.tokenizer.current_token in subroutine_dec):
+        while (self.tokenizer.token_type() == "KEYWORD") and (self.tokenizer.current_token in subroutine_dec):
             self.compile_subroutine()
 
         # the end of the class
         self.output_file.write("<symbol> } </symbol>\n")
-        self.tokenizer.advance()
-        self.output_file.write("</class>\n")  # TODO: check if advance is not empty
+        self.tokenizer.advance()  # TODO: check if advance is not empty
+
+        self.output_file.write("</tokens>\n")  # end of file
 
     def compile_class_var_dec(self) -> None:
         """Compiles a static declaration or a field declaration."""
@@ -65,8 +67,12 @@ class CompilationEngine:
         self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")    # ('static' | 'field')
         self.tokenizer.advance()
 
-        self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")   # type
-        self.tokenizer.advance()
+        if self.tokenizer.token_type() == "KEYWORD":
+            self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")  # type
+            self.tokenizer.advance()
+        else:
+            self.output_file.write(f"<identifier> {self.tokenizer.identifier()} </identifier>\n")  # type (object kind)
+            self.tokenizer.advance()
 
         self.output_file.write(f"<identifier> {self.tokenizer.identifier()} </identifier>\n")   # # varName
         self.tokenizer.advance()
@@ -89,14 +95,18 @@ class CompilationEngine:
         """ - subroutineDec: ('constructor' | 'function' | 'method') ('void' | type) 
     - subroutineName '(' parameterList ')' subroutineBody"""
 
-        self.output_file.write("<subroutineDec>\n")
         self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")  # method/func/constructor
         self.tokenizer.advance()
 
-        self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")  # 'void'/ type
-        self.tokenizer.advance()
+        if self.tokenizer.token_type() == "KEYWORD":
+            self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")  # type
+            self.tokenizer.advance()
+        else:
+            self.output_file.write(
+                f"<identifier> {self.tokenizer.identifier()} </identifier>\n")  # type (object kind)
+            self.tokenizer.advance()
 
-        self.output_file.write(f"<identifier> {self.tokenizer.identifier()}</identifier>")  # subroutineName
+        self.output_file.write(f"<identifier> {self.tokenizer.identifier()} </identifier>\n")  # subroutineName
         self.tokenizer.advance()
 
         self.output_file.write("<symbol> ( </symbol>\n")  # (
@@ -108,7 +118,6 @@ class CompilationEngine:
         self.tokenizer.advance()
 
         # - subroutineBody: '{' varDec* statements '}'
-        self.output_file.write("<subroutineBody>\n")
         self.output_file.write("<symbol> { </symbol>\n")  # {
         self.tokenizer.advance()
 
@@ -116,11 +125,8 @@ class CompilationEngine:
 
         self.compile_statements()
 
-        self.output_file.write("</subroutineBody>\n")
         self.output_file.write("<symbol> } </symbol>\n")  # }
         self.tokenizer.advance()
-
-        self.output_file.write("</subroutineDec>\n")
 
     def compile_parameter_list(self) -> None:
         """Compiles a (possibly empty) parameter list, not including the
@@ -128,15 +134,11 @@ class CompilationEngine:
         """
 
         # - parameterList: ((type varName) (',' type varName)*)?
-
         # check if empty
-        if self.tokenizer.symbol() == ")":
-            self.output_file.write("<parameterList>\n"
-                                   "</parameterList>\n")
-            self.tokenizer.advance()
-
+        if self.tokenizer.token_type() == "SYMBOL":
+            if self.tokenizer.symbol() == ")":
+                return
         else:  # not empty
-            self.output_file.write("<parameterList>\n")
             self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")  # type
             self.tokenizer.advance()
             self.output_file.write(f"<identifier> {self.tokenizer.identifier()} </identifier>\n")  # varName
@@ -150,20 +152,21 @@ class CompilationEngine:
                 self.output_file.write(f"<identifier> {self.tokenizer.identifier()} </identifier>\n")
                 self.tokenizer.advance()
 
-            self.output_file.write("</parameterList>\n")
-            # self.tokenizer.advance()
-
     def compile_var_dec(self) -> None:
         """Compiles a var declaration."""
         # varDec: 'var' type varName (',' varName)* ';'
-
-        self.output_file.write("<varDec>\n")
         while self.tokenizer.current_token == "var":
-
             self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")   # write 'var'
             self.tokenizer.advance()
-            self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")  # write type for example:int/char/list
-            self.tokenizer.advance()
+
+            if self.tokenizer.token_type() == "KEYWORD":
+                self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")  # type
+                self.tokenizer.advance()
+            else:
+                self.output_file.write(
+                    f"<identifier> {self.tokenizer.identifier()} </identifier>\n")  # type (object kind)
+                self.tokenizer.advance()
+
             self.output_file.write(f"<identifier> {self.tokenizer.identifier()} </identifier>\n")  # write the varName
             self.tokenizer.advance()
             # write all the parameters
@@ -175,7 +178,6 @@ class CompilationEngine:
 
             self.output_file.write(f"<symbol> ; </symbol>\n")
             self.tokenizer.advance()
-        self.output_file.write("</varDec>\n")
 
     def compile_statements(self) -> None:
         """Compiles a sequence of statements, not including the enclosing
@@ -184,26 +186,22 @@ class CompilationEngine:
         # - statement: letStatement | ifStatement | whileStatement | doStatement |
         #                  returnStatement
         STATEMENTS_KEYS = {'let', 'if', 'while', 'do', 'return'}
-        self.output_file.write("<statements>\n")
-
-        while self.tokenizer.keyword() in STATEMENTS_KEYS:
-            if self.tokenizer.keyword() == "let":
-                self.compile_let()
-            if self.tokenizer.keyword() == "while":
-                self.compile_while()
-            if self.tokenizer.keyword() == "do":
-                self.compile_do()
-            if self.tokenizer.keyword() == "return":
-                self.compile_return()
-            if self.tokenizer.keyword() == "if":
-                self.compile_if()
-
-        self.output_file.write("</statements>\n")
+        while self.tokenizer.token_type() == "KEYWORD":
+            if self.tokenizer.keyword() in STATEMENTS_KEYS:
+                if self.tokenizer.keyword() == "let":
+                    self.compile_let()
+                elif self.tokenizer.keyword() == "while":
+                    self.compile_while()
+                elif self.tokenizer.keyword() == "do":
+                    self.compile_do()
+                elif self.tokenizer.keyword() == "return":
+                    self.compile_return()
+                elif self.tokenizer.keyword() == "if":
+                    self.compile_if()
 
     def compile_do(self) -> None:
         """Compiles a do statement."""
         # - doStatement: 'do' subroutineCall ';'
-        self.output_file.wrtie("<doStatement>\n")
         self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")  # do
         self.tokenizer.advance()
 
@@ -226,11 +224,8 @@ class CompilationEngine:
         self.output_file.write(f"<symbol> ; </symbol>\n")   # ;
         self.tokenizer.advance()
 
-        self.output_file.write("</doStatement>\n")
-
     def compile_let(self) -> None:
         """Compiles a let statement."""
-        self.output_file.wrtie("<letStatement>\n")
         self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")  # let
         self.tokenizer.advance()
 
@@ -252,12 +247,9 @@ class CompilationEngine:
         self.output_file.write(f"<symbol> ; </symbol>\n")   # ;
         self.tokenizer.advance()
 
-        self.output_file.write("</letStatement>\n")
-
     def compile_while(self) -> None:
         """Compiles a while statement."""
         # - whileStatement: 'while' '(' 'expression' ')' '{' statements '}'
-        self.output_file.write("<whileStatement>\n")
         self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")  # while
         self.tokenizer.advance()
         self.output_file.write("<symbol> ( </symbol>\n")
@@ -271,28 +263,22 @@ class CompilationEngine:
         self.output_file.write("<symbol> } </symbol>\n")
         self.tokenizer.advance()
 
-        self.output_file.write("</whileStatement>\n")
-
     def compile_return(self) -> None:
         """Compiles a return statement."""
         # Your code goes here!
-        self.output_file.write("<returnStatement>\n")
         self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")  # return
         self.tokenizer.advance()
 
-        while self.tokenizer.current_token != ";":
+        if self.tokenizer.current_token != ";":  # check for expression
             self.compile_expression()
 
-        self.output_file.write(f"<symbol> ; </symbol>\n")   # ;
+        self.output_file.write("<symbol> ; </symbol>\n")  # ;
         self.tokenizer.advance()
-
-        self.output_file.write("</returnStatement>\n")
 
     def compile_if(self) -> None:
         """Compiles an if statement, possibly with a trailing else clause."""
         #  ifStatement: 'if' '(' expression ')' '{' statements '}' ('else' '{'
         #                    statements '}')?
-        self.output_file.write("<ifStatement>\n")
         self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")  # if
         self.tokenizer.advance()
 
@@ -319,8 +305,6 @@ class CompilationEngine:
             self.output_file.write("<symbol> } </symbol>\n")
             self.tokenizer.advance()
 
-        self.output_file.write("</ifStatement>\n")
-
     def compile_expression(self) -> None:
         """Compiles an expression."""
         # term (op term)?
@@ -343,7 +327,7 @@ class CompilationEngine:
         """
         # first check if it's a simple number or string or const keyword
         # then check for the two other recognisable options : (expression) , unaryOp term
-        if self.tokenizer.token_type == "INT_CONST":
+        if self.tokenizer.token_type() == "INT_CONST":
             self.output_file.write(f"<integerConstant> {self.tokenizer.int_val()} </integerConstant>\n")
             self.tokenizer.advance()
 
@@ -352,7 +336,7 @@ class CompilationEngine:
             self.tokenizer.advance()
 
         elif self.tokenizer.current_token in KEYWORD_CONSTANTS:
-            self.output_file.write(f"<keywordConstant> {self.tokenizer.keyword()} </keywordConstant>\n")
+            self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")
             self.tokenizer.advance()
 
         elif self.tokenizer.current_token == '(':
@@ -363,9 +347,17 @@ class CompilationEngine:
             self.tokenizer.advance()
 
         elif self.tokenizer.current_token in UNARY_OPERATIONS:
+            # #(y+3) is an option, so we either get' unaryOp term' or 'unaryOp (expression)'
             self.output_file.write(f"<symbol> {self.tokenizer.symbol()} </symbol>\n")
             self.tokenizer.advance()
-            self.compile_term()
+            if self.tokenizer.current_token == '(':
+                self.output_file.write("<symbol> ( </symbol>\n")
+                self.tokenizer.advance()
+                self.compile_expression()
+                self.output_file.write("<symbol> ) </symbol>\n")
+                self.tokenizer.advance()
+            else:
+                self.compile_term()
 
         elif self.tokenizer.token_type() == "IDENTIFIER":
             # keep the current token and advance to check what the next one is
@@ -393,6 +385,7 @@ class CompilationEngine:
                 self.output_file.write("<symbol> . </symbol>\n")
                 self.tokenizer.advance()
                 self.output_file.write(f"<identifier> {self.tokenizer.identifier()} </identifier>\n")
+                self.tokenizer.advance()
                 self.output_file.write("<symbol> ( </symbol>\n")
                 self.tokenizer.advance()
                 self.compile_expression_list()
@@ -407,8 +400,12 @@ class CompilationEngine:
         # if it's empty do nothing
         if self.tokenizer.current_token == ')':
             return
+
         # compile the first expression
         self.compile_expression()
+
         # while we have commas, compile the expression that comes after
         while self.tokenizer.current_token == ",":
+            self.output_file.write("<symbol> , </symbol>\n")
+            self.tokenizer.advance()
             self.compile_expression()
