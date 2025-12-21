@@ -12,8 +12,7 @@ from CompilationEngine import CompilationEngine
 from JackTokenizer import JackTokenizer
 
 
-def analyze_file(
-        input_file: typing.TextIO, output_file: typing.TextIO) -> None:
+def analyze_file(input_file: typing.TextIO, output_file: typing.TextIO) -> None:
     """Analyzes a single file.
 
     Args:
@@ -25,11 +24,9 @@ def analyze_file(
     tokenizer = JackTokenizer(input_file)
     engine = CompilationEngine(tokenizer, output_file)
 
-    while tokenizer.current_token == 'class': #TODO: move the while loop to the function CompilationEngine.compileClass
-
+    tokenizer.advance()
+    while tokenizer.current_token == 'class':  # TODO:move the while loop to the function CompilationEngine.compileClass
         engine.compile_class()
-
-
 
 
 if "__main__" == __name__:
