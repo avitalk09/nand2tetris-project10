@@ -13,7 +13,6 @@ OPERATIONS = {'+', '-', '/', '&', '|', '<', '>', '=', '*'}
 UNARY_OPERATIONS = {'-', '~', '#', '^'}
 KEYWORD_CONSTANTS = {'true', 'false', 'null', 'this'}
 
-
 class CompilationEngine:
     """Gets input from a JackTokenizer and emits its parsed structure into an
     output stream.
@@ -30,12 +29,14 @@ class CompilationEngine:
         # output_stream.write("Hello world! \n")
         self.tokenizer = input_stream
         self.output_file = output_stream
+        self.space_counter = 0
 
     def compile_class(self) -> None:
         """Compiles a complete class."""
-        self.output_file.write("<tokens>\n")  # beginning of file
 
         subroutine_dec = {"function", "method", "constructor"}
+
+        self.output_file.write("<class>\n")  # beginning of file
 
         # Write class and { and then advance to the class content
         self.output_file.write("<keyword> class </keyword>\n")
@@ -58,7 +59,7 @@ class CompilationEngine:
         self.output_file.write("<symbol> } </symbol>\n")
         self.tokenizer.advance()  # TODO: check if advance is not empty
 
-        self.output_file.write("</tokens>\n")  # end of file
+        self.output_file.write("</class>\n")  # end of file
 
     def compile_class_var_dec(self) -> None:
         """Compiles a static declaration or a field declaration."""
@@ -95,6 +96,7 @@ class CompilationEngine:
         """ - subroutineDec: ('constructor' | 'function' | 'method') ('void' | type) 
     - subroutineName '(' parameterList ')' subroutineBody"""
 
+        self.output_file.write("<subroutineDec>\n")
         self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")  # method/func/constructor
         self.tokenizer.advance()
 
@@ -118,6 +120,7 @@ class CompilationEngine:
         self.tokenizer.advance()
 
         # - subroutineBody: '{' varDec* statements '}'
+        self.output_file.write("<subroutineBody>\n")
         self.output_file.write("<symbol> { </symbol>\n")  # {
         self.tokenizer.advance()
 
@@ -125,8 +128,11 @@ class CompilationEngine:
 
         self.compile_statements()
 
+        self.output_file.write("</subroutineBody>\n")
         self.output_file.write("<symbol> } </symbol>\n")  # }
         self.tokenizer.advance()
+
+        self.output_file.write("</subroutineDec>\n")
 
     def compile_parameter_list(self) -> None:
         """Compiles a (possibly empty) parameter list, not including the
@@ -137,8 +143,11 @@ class CompilationEngine:
         # check if empty
         if self.tokenizer.token_type() == "SYMBOL":
             if self.tokenizer.symbol() == ")":
+                self.output_file.write("<parameterList>\n"
+                                       "</parameterList>\n")
                 return
         else:  # not empty
+            self.output_file.write("<parameterList>\n")
             self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")  # type
             self.tokenizer.advance()
             self.output_file.write(f"<identifier> {self.tokenizer.identifier()} </identifier>\n")  # varName
@@ -152,9 +161,12 @@ class CompilationEngine:
                 self.output_file.write(f"<identifier> {self.tokenizer.identifier()} </identifier>\n")
                 self.tokenizer.advance()
 
+                self.output_file.write("</parameterList>\n")
+
     def compile_var_dec(self) -> None:
         """Compiles a var declaration."""
         # varDec: 'var' type varName (',' varName)* ';'
+        self.output_file.write("<varDec>\n")
         while self.tokenizer.current_token == "var":
             self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")   # write 'var'
             self.tokenizer.advance()
@@ -179,6 +191,8 @@ class CompilationEngine:
             self.output_file.write(f"<symbol> ; </symbol>\n")
             self.tokenizer.advance()
 
+        self.output_file.write("</varDec>\n")
+
     def compile_statements(self) -> None:
         """Compiles a sequence of statements, not including the enclosing
         "{}".
@@ -186,6 +200,9 @@ class CompilationEngine:
         # - statement: letStatement | ifStatement | whileStatement | doStatement |
         #                  returnStatement
         STATEMENTS_KEYS = {'let', 'if', 'while', 'do', 'return'}
+
+        self.output_file.write("<statements>\n")
+
         while self.tokenizer.token_type() == "KEYWORD":
             if self.tokenizer.keyword() in STATEMENTS_KEYS:
                 if self.tokenizer.keyword() == "let":
@@ -199,9 +216,14 @@ class CompilationEngine:
                 elif self.tokenizer.keyword() == "if":
                     self.compile_if()
 
+        self.output_file.write("</statements>\n")
+
     def compile_do(self) -> None:
         """Compiles a do statement."""
         # - doStatement: 'do' subroutineCall ';'
+
+        self.output_file.write("<doStatement>\n")
+
         self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")  # do
         self.tokenizer.advance()
 
@@ -224,8 +246,13 @@ class CompilationEngine:
         self.output_file.write(f"<symbol> ; </symbol>\n")   # ;
         self.tokenizer.advance()
 
+        self.output_file.write("</doStatement>\n")
+
     def compile_let(self) -> None:
         """Compiles a let statement."""
+
+        self.output_file.write("<letStatement>\n")
+
         self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")  # let
         self.tokenizer.advance()
 
@@ -247,9 +274,13 @@ class CompilationEngine:
         self.output_file.write(f"<symbol> ; </symbol>\n")   # ;
         self.tokenizer.advance()
 
+        self.output_file.write("</letStatement>\n")
+
     def compile_while(self) -> None:
         """Compiles a while statement."""
         # - whileStatement: 'while' '(' 'expression' ')' '{' statements '}'
+        self.output_file.write("<whileStatement>\n")
+
         self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")  # while
         self.tokenizer.advance()
         self.output_file.write("<symbol> ( </symbol>\n")
@@ -263,9 +294,11 @@ class CompilationEngine:
         self.output_file.write("<symbol> } </symbol>\n")
         self.tokenizer.advance()
 
+        self.output_file.write("</whileStatement>\n")
+
     def compile_return(self) -> None:
         """Compiles a return statement."""
-        # Your code goes here!
+        self.output_file.write("<returnStatement>\n")
         self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")  # return
         self.tokenizer.advance()
 
@@ -275,10 +308,14 @@ class CompilationEngine:
         self.output_file.write("<symbol> ; </symbol>\n")  # ;
         self.tokenizer.advance()
 
+        self.output_file.write("</returnStatement>\n")
+
     def compile_if(self) -> None:
         """Compiles an if statement, possibly with a trailing else clause."""
         #  ifStatement: 'if' '(' expression ')' '{' statements '}' ('else' '{'
         #                    statements '}')?
+        self.output_file.write("<ifStatement>\n")
+
         self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")  # if
         self.tokenizer.advance()
 
@@ -304,6 +341,8 @@ class CompilationEngine:
             self.compile_statements()
             self.output_file.write("<symbol> } </symbol>\n")
             self.tokenizer.advance()
+
+        self.output_file.write("</ifStatement>\n")
 
     def compile_expression(self) -> None:
         """Compiles an expression."""
