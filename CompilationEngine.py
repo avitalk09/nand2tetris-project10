@@ -128,8 +128,9 @@ class CompilationEngine:
 
         self.compile_statements()
 
-        self.output_file.write("</subroutineBody>\n")
+
         self.output_file.write("<symbol> } </symbol>\n")  # }
+        self.output_file.write("</subroutineBody>\n")
         self.tokenizer.advance()
 
         self.output_file.write("</subroutineDec>\n")
@@ -161,13 +162,14 @@ class CompilationEngine:
                 self.output_file.write(f"<identifier> {self.tokenizer.identifier()} </identifier>\n")
                 self.tokenizer.advance()
 
-                self.output_file.write("</parameterList>\n")
+            self.output_file.write("</parameterList>\n")
 
     def compile_var_dec(self) -> None:
         """Compiles a var declaration."""
         # varDec: 'var' type varName (',' varName)* ';'
-        self.output_file.write("<varDec>\n")
         while self.tokenizer.current_token == "var":
+            self.output_file.write("<varDec>\n")
+
             self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")   # write 'var'
             self.tokenizer.advance()
 
@@ -190,8 +192,9 @@ class CompilationEngine:
 
             self.output_file.write(f"<symbol> ; </symbol>\n")
             self.tokenizer.advance()
+            self.output_file.write("</varDec>\n")
 
-        self.output_file.write("</varDec>\n")
+
 
     def compile_statements(self) -> None:
         """Compiles a sequence of statements, not including the enclosing
@@ -347,12 +350,14 @@ class CompilationEngine:
     def compile_expression(self) -> None:
         """Compiles an expression."""
         # term (op term)?
+        self.output_file.write("<expression>\n")
         self.compile_term()
 
         if self.tokenizer.current_token in OPERATIONS:
             self.output_file.write(f"<symbol> {self.tokenizer.symbol()} </symbol>\n")
             self.tokenizer.advance()
             self.compile_term()
+            self.output_file.write("</expression>\n")
 
     def compile_term(self) -> None:
         """ Compiles a term.
@@ -366,6 +371,7 @@ class CompilationEngine:
         """
         # first check if it's a simple number or string or const keyword
         # then check for the two other recognisable options : (expression) , unaryOp term
+        self.output_file.write("<term>\n")
         if self.tokenizer.token_type() == "INT_CONST":
             self.output_file.write(f"<integerConstant> {self.tokenizer.int_val()} </integerConstant>\n")
             self.tokenizer.advance()
@@ -433,18 +439,24 @@ class CompilationEngine:
 
             else:
                 self.output_file.write(f"<identifier> {prev_token} </identifier>\n")
+        self.output_file.write("</term>\n")
 
     def compile_expression_list(self) -> None:
         """Compiles a (possibly empty) comma-separated list of expressions."""
         # if it's empty do nothing
+        self.output_file.write("<expressionList>\n")
+
         if self.tokenizer.current_token == ')':
             return
 
         # compile the first expression
         self.compile_expression()
 
+
         # while we have commas, compile the expression that comes after
         while self.tokenizer.current_token == ",":
             self.output_file.write("<symbol> , </symbol>\n")
             self.tokenizer.advance()
             self.compile_expression()
+
+        self.output_file.write("</expressionList>\n")
