@@ -399,11 +399,13 @@ class CompilationEngine:
             self.output_file.write(f"<symbol> {self.tokenizer.symbol()} </symbol>\n")
             self.tokenizer.advance()
             if self.tokenizer.current_token == '(':
+                self.output_file.write("<term>\n")
                 self.output_file.write("<symbol> ( </symbol>\n")
                 self.tokenizer.advance()
                 self.compile_expression()
                 self.output_file.write("<symbol> ) </symbol>\n")
                 self.tokenizer.advance()
+                self.output_file.write("</term>\n")
             else:
                 self.compile_term()
 
