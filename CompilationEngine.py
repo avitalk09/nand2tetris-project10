@@ -65,6 +65,8 @@ class CompilationEngine:
         """Compiles a static declaration or a field declaration."""
         """- classVarDec: ('static' | 'field') type varName (',' varName)* ';'  """
 
+        self.output_file.write("<classVarDec>\n")
+
         self.output_file.write(f"<keyword> {self.tokenizer.keyword()} </keyword>\n")    # ('static' | 'field')
         self.tokenizer.advance()
 
@@ -86,6 +88,7 @@ class CompilationEngine:
 
         self.output_file.write(f"<symbol> ; </symbol>\n")
         self.tokenizer.advance()
+        self.output_file.write("</classVarDec>\n")
 
     def compile_subroutine(self) -> None:
         """
@@ -193,7 +196,6 @@ class CompilationEngine:
             self.output_file.write(f"<symbol> ; </symbol>\n")
             self.tokenizer.advance()
             self.output_file.write("</varDec>\n")
-
 
 
     def compile_statements(self) -> None:
@@ -357,7 +359,8 @@ class CompilationEngine:
             self.output_file.write(f"<symbol> {self.tokenizer.symbol()} </symbol>\n")
             self.tokenizer.advance()
             self.compile_term()
-            self.output_file.write("</expression>\n")
+
+        self.output_file.write("</expression>\n")
 
     def compile_term(self) -> None:
         """ Compiles a term.
@@ -447,6 +450,8 @@ class CompilationEngine:
         self.output_file.write("<expressionList>\n")
 
         if self.tokenizer.current_token == ')':
+            self.output_file.write("</expressionList>\n")   #############
+
             return
 
         # compile the first expression
